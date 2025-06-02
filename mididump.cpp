@@ -102,7 +102,7 @@ int main(const int argc, const char* const* const argv)
 
 	const int format = (buf[8] << 8) | buf[9];
 	const int num_tracks = (buf[10] << 8) | buf[11];
-	const short division = (buf[12] << 8) | buf[13];
+	const int division = (short)((buf[12] << 8) | buf[13]);
 
 	printf("File format: %d\n"
 	       "Number of tracks: %d\n", format, num_tracks);
@@ -110,8 +110,8 @@ int main(const int argc, const char* const* const argv)
 	if (division >= 0)
 		printf("Ticks per quarter note: %d\n", division);
 	else
-		printf("Ticks per frame: %d\n"
-		       "SMPTE format: %d\n", division & 0xFF, division >> 8);
+		printf("SMPTE format: %d\n"
+		       "Ticks per frame: %d\n", -division >> 8, division & 0xFF);
 
 	if (size > 6)
 	{
