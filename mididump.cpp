@@ -19,7 +19,10 @@ bool parse_chunk(const unsigned char* const buf, const char* const chunk_type, u
 		putchar(c >= 0x20 && c < 0x7F ? c : '?');
 	}
 
-	if (track_idx >= 0) printf(" [%d]", track_idx);
+	if (track_idx >= 0 && !memcmp(buf, "MTrk", 4))
+	{
+		printf(" [%d]", track_idx);
+	}
 
 	const unsigned int n = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
 	*chunk_size = n;
@@ -121,7 +124,7 @@ int main(const int argc, const char* const* const argv)
 		}
 	}
 
-	for (int i = 0; i < num_tracks; ++i)
+	for (int i = 0; i < num_tracks;)
 	{
 		putchar('\n');
 
@@ -130,16 +133,13 @@ int main(const int argc, const char* const* const argv)
 			return read_error(argv[1], fp);
 		}
 
-		if (!parse_chunk(buf, "MTrk", &size, i))
-		{
-			fprintf(stderr, "Invalid MTrk chunk\n");
-			return error(5, fp);
-		}
+		const bool track_chunk = parse_chunk(buf, "MTrk", &size, i);
+		if (track_chunk) i++;
 
 		unsigned long long abs_time = 0;
-		bool end_of_track = false;
+		bool end_of_track = !track_chunk;
 
-		do
+		while (!end_of_track)
 		{
 			unsigned int n;
 			int delta_time;
@@ -248,11 +248,11 @@ int main(const int argc, const char* const* const argv)
 			if (quote) putchar('"');
 			putchar('\n');
 		}
-		while (!end_of_track);
 
 		if (size)
 		{
-			printf("\n[Skipping %u bytes]\n", size);
+			if (track_chunk) putchar('\n');
+			printf("[Skipping %u bytes]\n", size);
 
 			if (fseek(fp, size, SEEK_CUR))
 			{
